@@ -1,12 +1,14 @@
 name: "Automated Puppet"
 description: "Scheduled screenshot capture of Home Assistant dashboards"
-version: "2.1.3"
+version: "2.2.0"
 slug: "automated-puppet"
 homeassistant_api: true
 init: false
 arch:
   - aarch64
   - amd64
+map:
+  - config:rw
 options:
   access_token: ""
   home_assistant_url: "http://homeassistant:8123"
