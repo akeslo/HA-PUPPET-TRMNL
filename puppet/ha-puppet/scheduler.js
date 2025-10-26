@@ -91,19 +91,19 @@ class ScreenshotScheduler {
       logger.info(`Capturing "${name}" from ${screenshotConfig.path}`);
       const start = Date.now();
 
-      // Prepare request parameters
+      // Prepare request parameters (ensure types are correct)
       const requestParams = {
         pagePath: screenshotConfig.path,
         viewport: {
-          width: screenshotConfig.viewport.width,
-          height: screenshotConfig.viewport.height,
+          width: parseInt(screenshotConfig.viewport.width),
+          height: parseInt(screenshotConfig.viewport.height),
         },
-        extraWait: screenshotConfig.wait,
-        einkColors: screenshotConfig.eink,
+        extraWait: screenshotConfig.wait ? parseInt(screenshotConfig.wait) : undefined,
+        einkColors: screenshotConfig.eink ? parseInt(screenshotConfig.eink) : undefined,
         invert: screenshotConfig.invert || false,
-        zoom: screenshotConfig.zoom || 1,
+        zoom: screenshotConfig.zoom ? parseFloat(screenshotConfig.zoom) : 1,
         format: screenshotConfig.format || "png",
-        rotate: screenshotConfig.rotate,
+        rotate: screenshotConfig.rotate ? parseInt(screenshotConfig.rotate) : undefined,
         lang: screenshotConfig.lang,
         theme: screenshotConfig.theme,
         dark: screenshotConfig.dark || false,
@@ -138,6 +138,7 @@ class ScreenshotScheduler {
       return { success: true, path: savedPath, url: localUrl };
     } catch (err) {
       logger.error(`✗ Failed to capture "${name}":`, err.message);
+      logger.debug("Stack trace:", err.stack);
       return { success: false, error: err.message };
     }
   }
