@@ -16,8 +16,15 @@ export class FileManager {
    */
   ensureDirectoryExists(dirPath) {
     if (!existsSync(dirPath)) {
-      mkdirSync(dirPath, { recursive: true });
-      logger.debug(`Created directory: ${dirPath}`);
+      try {
+        mkdirSync(dirPath, { recursive: true });
+        logger.info(`Created directory: ${dirPath}`);
+      } catch (err) {
+        logger.error(`Failed to create directory ${dirPath}:`, err.message);
+        throw new Error(`Cannot create directory: ${dirPath} - ${err.message}`);
+      }
+    } else {
+      logger.debug(`Directory exists: ${dirPath}`);
     }
   }
 
@@ -56,7 +63,14 @@ export class FileManager {
 
     // Always save as "latest" for easy access
     const latestPath = join(screenshotDir, `latest.${extension}`);
-    writeFileSync(latestPath, imageBuffer);
+
+    try {
+      writeFileSync(latestPath, imageBuffer);
+      logger.debug(`Wrote ${imageBuffer.length} bytes to ${latestPath}`);
+    } catch (err) {
+      logger.error(`Failed to write file ${latestPath}:`, err.message);
+      throw new Error(`Cannot write screenshot file: ${err.message}`);
+    }
 
     // Optionally save timestamped version for history
     if (keepHistory) {
@@ -65,7 +79,11 @@ export class FileManager {
         .replace(/:/g, "-")
         .replace(/\..+/, "");
       const timestampPath = join(screenshotDir, `${timestamp}.${extension}`);
-      writeFileSync(timestampPath, imageBuffer);
+      try {
+        writeFileSync(timestampPath, imageBuffer);
+      } catch (err) {
+        logger.warn(`Failed to write history file:`, err.message);
+      }
     }
 
     return latestPath;
