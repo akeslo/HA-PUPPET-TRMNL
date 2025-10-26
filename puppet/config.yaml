@@ -10,6 +10,28 @@ arch:
 options:
   access_token: ""
   home_assistant_url: "http://homeassistant:8123"
+  screenshots:
+    - name: "main-dashboard"
+      path: "/lovelace/0"
+      width: 1920
+      height: 1080
+      interval: 300
+      format: "png"
 schema:
-  access_token: str
+  access_token: password
   home_assistant_url: str
+  screenshots:
+    - name: str
+      path: str
+      width: int(100,7680)
+      height: int(100,4320)
+      interval: int(10,86400)
+      format: list(png|jpeg|webp|bmp)?
+      eink: list(2|4|8|16|256)?
+      invert: bool?
+      zoom: float(0.1,5.0)?
+      rotate: list(90|180|270)?
+      lang: str?
+      theme: str?
+      dark: bool?
+      wait: int(0,30000)?

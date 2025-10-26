@@ -19,12 +19,19 @@ class ScreenshotScheduler {
    * Load and validate configuration
    */
   loadConfig() {
-    if (!existsSync(this.configPath)) {
-      throw new Error(`Configuration file not found: ${this.configPath}`);
-    }
+    let config;
 
-    const configData = readFileSync(this.configPath, "utf8");
-    const config = JSON.parse(configData);
+    // If configPath is an object, it's already loaded from options
+    if (typeof this.configPath === 'object') {
+      config = this.configPath;
+    } else {
+      // Load from file (for development/backwards compatibility)
+      if (!existsSync(this.configPath)) {
+        throw new Error(`Configuration file not found: ${this.configPath}`);
+      }
+      const configData = readFileSync(this.configPath, "utf8");
+      config = JSON.parse(configData);
+    }
 
     if (!config.screenshots || !Array.isArray(config.screenshots)) {
       throw new Error(
@@ -32,7 +39,7 @@ class ScreenshotScheduler {
       );
     }
 
-    // Validate each screenshot config
+    // Validate and normalize each screenshot config
     config.screenshots.forEach((screenshot, index) => {
       if (!screenshot.name) {
         throw new Error(`Screenshot at index ${index} missing required "name"`);
@@ -42,11 +49,27 @@ class ScreenshotScheduler {
           `Screenshot "${screenshot.name}" missing required "path"`,
         );
       }
-      if (!screenshot.viewport || !screenshot.viewport.width || !screenshot.viewport.height) {
+
+      // Normalize viewport: support both {width, height} and separate width/height fields
+      if (!screenshot.viewport) {
+        if (screenshot.width && screenshot.height) {
+          screenshot.viewport = {
+            width: screenshot.width,
+            height: screenshot.height
+          };
+        } else {
+          throw new Error(
+            `Screenshot "${screenshot.name}" missing required "viewport" or "width"/"height"`,
+          );
+        }
+      }
+
+      if (!screenshot.viewport.width || !screenshot.viewport.height) {
         throw new Error(
-          `Screenshot "${screenshot.name}" missing required "viewport" with width and height`,
+          `Screenshot "${screenshot.name}" viewport missing width or height`,
         );
       }
+
       if (!screenshot.interval || screenshot.interval < 1) {
         throw new Error(
           `Screenshot "${screenshot.name}" missing or invalid "interval" (must be >= 1 second)`,
@@ -201,10 +224,21 @@ class ScreenshotScheduler {
 }
 
 /**
- * Main entry point
+ * Load configuration from add-on options or file
  */
-async function main() {
-  // Determine config file path
+function loadConfiguration() {
+  // Try to load from add-on options first
+  const optionsFile = isAddOn ? "/data/options.json" : null;
+
+  if (optionsFile && existsSync(optionsFile)) {
+    const options = JSON.parse(readFileSync(optionsFile, "utf8"));
+    if (options.screenshots && Array.isArray(options.screenshots)) {
+      console.log("Using configuration from add-on options");
+      return { screenshots: options.screenshots };
+    }
+  }
+
+  // Fall back to file-based configuration (for development)
   const configPaths = [
     "./screenshots-dev.json",
     "./screenshots.json",
@@ -215,7 +249,7 @@ async function main() {
 
   if (!configPath) {
     console.error(
-      "No screenshots configuration file found. Please create one of:",
+      "No screenshots configuration found. Please configure screenshots in the add-on options or create one of:",
     );
     configPaths.forEach((path) => console.error(`  - ${path}`));
     console.error(
@@ -224,7 +258,16 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Using configuration: ${configPath}`);
+  console.log(`Using configuration file: ${configPath}`);
+  return configPath;
+}
+
+/**
+ * Main entry point
+ */
+async function main() {
+  // Load configuration
+  const config = loadConfiguration();
 
   // Determine output path
   const outputPath = isAddOn ? "/config/www/screenshots" : "./output";
@@ -233,7 +276,7 @@ async function main() {
   // Initialize components
   const browser = new Browser(hassUrl, hassToken);
   const fileManager = new FileManager(outputPath);
-  const scheduler = new ScreenshotScheduler(configPath, browser, fileManager);
+  const scheduler = new ScreenshotScheduler(config, browser, fileManager);
 
   // Handle graceful shutdown
   const shutdown = async () => {

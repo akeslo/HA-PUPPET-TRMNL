@@ -12,67 +12,58 @@ Enable the watch dog option to restart the add-on when the browser fails to laun
 
 [![ESPHome device showing a screenshot of a Home Assistant dashboard](https://raw.githubusercontent.com/balloob/home-assistant-addons/main/puppet/example/screenshot.jpg)](./example/)
 
-## Add-on Configuration
+## Configuration
+
+Configure the add-on through the **Configuration** tab in Home Assistant:
+
+### Basic Settings
 
 - **access_token**: Long-lived access token used to authenticate against Home Assistant. (Required)
-- **home_assistant_url**: Base URL of your Home Assistant instance that the add-on browser should open when taking screenshots. Defaults to `http://homeassistant:8123` which is the internal URL at which the add-on can reach Home Assistant. You can override it if your instance has configured SSL certificates inside Home Assistant and requires to be reached via a different hostname or port (e.g., http://my-ha.local:8123 or https://example.duckdns.org).
+- **home_assistant_url**: Base URL of your Home Assistant instance. Defaults to `http://homeassistant:8123`
 
-## Screenshot Configuration
+### Screenshot Configuration
 
-After installing the add-on, you must create a screenshot configuration file at `/config/screenshots.json` that defines what to capture and how often.
+Define one or more screenshots to capture automatically. Click the **+** button to add screenshots.
+
+**Each screenshot requires:**
+- **name**: Unique identifier (used for folder/file naming, no spaces recommended)
+- **path**: Home Assistant path to capture (e.g., `/lovelace/0`)
+- **width**: Screenshot width in pixels (100-7680)
+- **height**: Screenshot height in pixels (100-4320)
+- **interval**: How often to capture in seconds (10-86400)
+
+**Optional settings:**
+- **format**: Output format - `png` (default), `jpeg`, `webp`, or `bmp`
+- **eink**: Number of colors for e-ink displays (2, 4, 8, 16, or 256)
+- **invert**: Invert colors (only for `eink: 2`)
+- **zoom**: Zoom level (0.1-5.0, default: 1.0)
+- **rotate**: Rotation angle - 90, 180, or 270 degrees
+- **lang**: Language code (e.g., `en`, `nl`, `de`, `ko`, `ja`)
+- **theme**: Home Assistant theme name (e.g., `Graphite E-ink Light`)
+- **dark**: Enable dark mode
+- **wait**: Extra wait time in milliseconds after page load (0-30000)
 
 ### Example Configuration
 
-Create `/config/screenshots.json`:
-
-```json
-{
-  "screenshots": [
-    {
-      "name": "main-dashboard",
-      "path": "/lovelace/0",
-      "viewport": {
-        "width": 1000,
-        "height": 1000
-      },
-      "interval": 300
-    },
-    {
-      "name": "eink-display",
-      "path": "/dashboard-dashboards/waveshare",
-      "viewport": {
-        "width": 800,
-        "height": 480
-      },
-      "interval": 60,
-      "format": "png",
-      "eink": 2,
-      "theme": "Graphite E-ink Light"
-    }
-  ]
-}
+```yaml
+access_token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+home_assistant_url: "http://homeassistant:8123"
+screenshots:
+  - name: main-dashboard
+    path: /lovelace/0
+    width: 1920
+    height: 1080
+    interval: 300
+    format: png
+  - name: eink-display
+    path: /lovelace/weather
+    width: 800
+    height: 480
+    interval: 60
+    format: png
+    eink: 2
+    theme: Graphite E-ink Light
 ```
-
-### Configuration Options
-
-Each screenshot object supports:
-
-**Required:**
-- `name`: Unique identifier (used for folder/file naming, no spaces recommended)
-- `path`: Home Assistant path to capture (e.g., `/lovelace/0`)
-- `viewport`: Object with `width` and `height` in pixels
-- `interval`: How often to capture in seconds (minimum 1)
-
-**Optional:**
-- `format`: Output format - `png` (default), `jpeg`, `webp`, or `bmp`
-- `eink`: Number of colors for e-ink displays (2, 4, 8, 16, or 256)
-- `invert`: Invert colors (boolean, only for `eink: 2`)
-- `zoom`: Zoom level (default: 1)
-- `rotate`: Rotation angle - 90, 180, or 270 degrees
-- `lang`: Language code (e.g., `en`, `nl`, `de`, `ko`, `ja`)
-- `theme`: Home Assistant theme name (e.g., `Graphite E-ink Light`)
-- `dark`: Enable dark mode (boolean)
-- `wait`: Extra wait time in milliseconds after page load
 
 ## Usage
 
