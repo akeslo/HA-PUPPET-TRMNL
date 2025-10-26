@@ -185,7 +185,7 @@ export class Browser {
         await page.setViewport(viewport);
       }
 
-      let defaultWait = isAddOn ? 750 : 500;
+      let defaultWait = isAddOn ? 2000 : 1000;
       let openedNewPage = false;
 
       // If we're still on about:blank, navigate to HA UI
@@ -225,8 +225,9 @@ export class Browser {
         page.removeScriptToEvaluateOnNewDocument(evaluateIdentifier.identifier);
 
         // Launching browser is slow inside the add-on, give it extra time
+        // Cold start needs more time for cards to render
         if (isAddOn) {
-          defaultWait += 2000;
+          defaultWait += 5000;
         }
       } else if (this.lastRequestedPath !== pagePath) {
         // mimick HA frontend navigation (no full reload)
