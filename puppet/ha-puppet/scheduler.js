@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from "fs";
 import { Browser } from "./screenshot.js";
 import { FileManager } from "./file-manager.js";
 import { hassUrl, hassToken, isAddOn } from "./const.js";
+import { logger } from "./logger.js";
 
 /**
  * Manages scheduled screenshot jobs
@@ -85,10 +86,9 @@ class ScreenshotScheduler {
    */
   async captureScreenshot(screenshotConfig) {
     const { name } = screenshotConfig;
-    const requestId = `${name}-${Date.now()}`;
 
     try {
-      console.log(requestId, `Starting capture: ${screenshotConfig.path}`);
+      logger.info(`Capturing "${name}" from ${screenshotConfig.path}`);
       const start = Date.now();
 
       // Prepare request parameters
@@ -110,13 +110,11 @@ class ScreenshotScheduler {
       };
 
       // Navigate to page
-      const navigateResult = await this.browser.navigatePage(requestParams);
-      console.debug(requestId, `Navigated in ${navigateResult.time} ms`);
+      await this.browser.navigatePage(requestParams);
 
       // Take screenshot
       const screenshotResult =
         await this.browser.screenshotPage(requestParams);
-      console.debug(requestId, `Screenshot in ${screenshotResult.time} ms`);
 
       // Save to disk
       const savedPath = this.fileManager.saveScreenshot(
@@ -134,14 +132,12 @@ class ScreenshotScheduler {
       );
 
       const totalTime = Date.now() - start;
-      console.log(
-        requestId,
-        `Completed in ${totalTime}ms → ${savedPath} (accessible at ${localUrl})`,
-      );
+      logger.info(`✓ "${name}" saved to ${savedPath} (${totalTime}ms)`);
+      logger.info(`  Access at: ${localUrl}`);
 
       return { success: true, path: savedPath, url: localUrl };
     } catch (err) {
-      console.error(requestId, `Failed to capture screenshot:`, err);
+      logger.error(`✗ Failed to capture "${name}":`, err.message);
       return { success: false, error: err.message };
     }
   }
@@ -153,13 +149,11 @@ class ScreenshotScheduler {
     const { name, interval } = screenshotConfig;
 
     if (this.jobs.has(name)) {
-      console.warn(`Job "${name}" already scheduled, skipping duplicate`);
+      logger.warn(`Job "${name}" already scheduled, skipping duplicate`);
       return;
     }
 
-    console.log(
-      `Scheduling "${name}" every ${interval} seconds (${screenshotConfig.path})`,
-    );
+    logger.info(`Scheduled "${name}" every ${interval}s → ${screenshotConfig.path}`);
 
     // Capture immediately on startup
     this.captureScreenshot(screenshotConfig);
@@ -182,22 +176,20 @@ class ScreenshotScheduler {
    * Start all scheduled jobs
    */
   start() {
-    console.log("Starting Screenshot Scheduler");
+    logger.info("Starting Automated Puppet Scheduler");
 
     try {
       const config = this.loadConfig();
-      console.log(
-        `Loaded configuration with ${config.screenshots.length} screenshot(s)`,
-      );
+      logger.info(`Loaded ${config.screenshots.length} screenshot configuration(s)`);
 
       // Schedule each screenshot
       config.screenshots.forEach((screenshot) => {
         this.scheduleJob(screenshot);
       });
 
-      console.log(`Successfully scheduled ${this.jobs.size} job(s)`);
+      logger.info(`All jobs scheduled successfully`);
     } catch (err) {
-      console.error("Failed to start scheduler:", err);
+      logger.error("Failed to start scheduler:", err.message);
       throw err;
     }
   }
@@ -206,20 +198,19 @@ class ScreenshotScheduler {
    * Stop all scheduled jobs and cleanup
    */
   async stop() {
-    console.log("Stopping Screenshot Scheduler");
+    logger.info("Stopping scheduler");
     this.isShuttingDown = true;
 
     // Clear all intervals
     for (const [name, job] of this.jobs.entries()) {
       clearInterval(job.timerId);
-      console.log(`Stopped job: ${name}`);
     }
 
     this.jobs.clear();
 
     // Cleanup browser
     await this.browser.cleanup();
-    console.log("Scheduler stopped");
+    logger.info("Scheduler stopped");
   }
 }
 
@@ -233,7 +224,7 @@ function loadConfiguration() {
   if (optionsFile && existsSync(optionsFile)) {
     const options = JSON.parse(readFileSync(optionsFile, "utf8"));
     if (options.screenshots && Array.isArray(options.screenshots)) {
-      console.log("Using configuration from add-on options");
+      logger.info("Using configuration from add-on options");
       return { screenshots: options.screenshots };
     }
   }
@@ -248,17 +239,14 @@ function loadConfiguration() {
   const configPath = configPaths.find(existsSync);
 
   if (!configPath) {
-    console.error(
-      "No screenshots configuration found. Please configure screenshots in the add-on options or create one of:",
-    );
-    configPaths.forEach((path) => console.error(`  - ${path}`));
-    console.error(
-      "\nFor development, copy screenshots-example.json to screenshots-dev.json",
-    );
+    logger.error("No screenshots configuration found.");
+    logger.error("Please configure screenshots in the add-on options or create one of:");
+    configPaths.forEach((path) => logger.error(`  - ${path}`));
+    logger.error("\nFor development, copy screenshots-example.json to screenshots-dev.json");
     process.exit(1);
   }
 
-  console.log(`Using configuration file: ${configPath}`);
+  logger.info(`Using configuration file: ${configPath}`);
   return configPath;
 }
 
@@ -266,12 +254,14 @@ function loadConfiguration() {
  * Main entry point
  */
 async function main() {
+  logger.info("=== Automated Puppet ===");
+
   // Load configuration
   const config = loadConfiguration();
 
   // Determine output path
   const outputPath = isAddOn ? "/config/www/screenshots" : "./output";
-  console.log(`Screenshots will be saved to: ${outputPath}`);
+  logger.info(`Output directory: ${outputPath}`);
 
   // Initialize components
   const browser = new Browser(hassUrl, hassToken);
@@ -280,7 +270,7 @@ async function main() {
 
   // Handle graceful shutdown
   const shutdown = async () => {
-    console.log("\nReceived shutdown signal");
+    logger.info("Received shutdown signal");
     await scheduler.stop();
     process.exit(0);
   };
@@ -291,9 +281,8 @@ async function main() {
   // Start scheduler
   try {
     scheduler.start();
-    console.log("Scheduler is running. Press Ctrl+C to stop.");
   } catch (err) {
-    console.error("Fatal error:", err);
+    logger.error("Fatal error:", err.message);
     process.exit(1);
   }
 }

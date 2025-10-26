@@ -1,5 +1,6 @@
 import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { join, dirname } from "path";
+import { logger } from "./logger.js";
 
 /**
  * Manages screenshot file storage in the Home Assistant /www directory
@@ -16,7 +17,7 @@ export class FileManager {
   ensureDirectoryExists(dirPath) {
     if (!existsSync(dirPath)) {
       mkdirSync(dirPath, { recursive: true });
-      console.log(`Created directory: ${dirPath}`);
+      logger.debug(`Created directory: ${dirPath}`);
     }
   }
 

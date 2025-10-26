@@ -3,6 +3,7 @@ import sharp from "sharp"; // Import sharp
 import { BMPEncoder } from "./bmp.js";
 import { debug, isAddOn, chromiumExecutable } from "./const.js";
 import { CannotOpenPageError } from "./error.js";
+import { logger } from "./logger.js";
 
 const HEADER_HEIGHT = 56;
 
@@ -90,7 +91,7 @@ export class Browser {
         await page.close();
       }
     } catch (err) {
-      console.error("Error closing page during cleanup:", err);
+      logger.debug("Error closing page during cleanup:", err);
     }
 
     try {
@@ -98,10 +99,10 @@ export class Browser {
         await browser.close();
       }
     } catch (err) {
-      console.error("Error closing browser during cleanup:", err);
+      logger.debug("Error closing browser during cleanup:", err);
     }
 
-    console.log("Closed browser");
+    logger.debug("Browser closed");
   }
 
   async getPage() {
@@ -109,7 +110,7 @@ export class Browser {
       return this.page;
     }
 
-    console.log("Starting browser");
+    logger.info("Starting Chromium browser");
     // We don't catch these errors on purpose, as we're
     // not able to recover once the app fails to start.
     const browser = await puppeteer.launch({
@@ -119,32 +120,13 @@ export class Browser {
     });
     const page = await browser.newPage();
 
-    // Route all log messages from browser to our add-on log
-    // https://pptr.dev/api/puppeteer.pageevents
+    // Route critical errors to log (suppress verbose messages)
     page
-      .on("framenavigated", (frame) =>
-        // Why are we seeing so many frame navigated ??
-        console.log("Frame navigated", frame.url()),
-      )
-      .on("console", (message) =>
-        console.log(
-          `CONSOLE ${message
-            .type()
-            .substr(0, 3)
-            .toUpperCase()} ${message.text()}`,
-        ),
-      )
-      .on("error", (err) => console.error("ERROR", err))
-      .on("pageerror", ({ message }) => console.log("PAGE ERROR", message))
+      .on("error", (err) => logger.error("Browser error:", err.message))
+      .on("pageerror", ({ message }) => logger.error("Page error:", message))
       .on("requestfailed", (request) =>
-        console.log(
-          `REQUEST-FAILED ${request.failure().errorText} ${request.url()}`,
-        ),
-      );
-    if (debug)
-      page.on("response", (response) =>
-        console.log(
-          `RESPONSE ${response.status()} ${response.url()} (cache: ${response.fromCache()})`,
+        logger.debug(
+          `Request failed: ${request.failure().errorText} ${request.url()}`,
         ),
       );
 
