@@ -1,5 +1,5 @@
 {
-    "name": "Balloob's experimental playground",
-    "url": "https://github.com/balloob/home-assistant-addons",
-    "maintainer": "balloob"
+    "name": "Automated Puppet - Scheduled Screenshots",
+    "url": "https://github.com/akeslo/HA-PUPPET-TRMNL",
+    "maintainer": "akeslo"
 }

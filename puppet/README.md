@@ -1,8 +1,10 @@
-# Screenshot Home Assistant using Puppeteer (Scheduled Mode)
+# Automated Puppet - Scheduled Home Assistant Screenshots
 
 Automatically capture screenshots of your Home Assistant dashboards on a schedule using Puppeteer. Screenshots are saved to the `/config/www/screenshots/` directory and are accessible via Home Assistant's local media system.
 
-[![Open your Home Assistant instance and show the dashboard of an add-on.](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=0f1cc410_puppet&repository_url=https%3A%2F%2Fgithub.com%2Fballoob%2Fhome-assistant-addons)
+**This is a fork of the original Puppet add-on**, redesigned to run as a scheduled background process instead of an HTTP server. It can be installed alongside the original Puppet add-on via HACS.
+
+[![Open your Home Assistant instance and show the dashboard of an add-on.](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=a8d03a84_automated-puppet&repository_url=https%3A%2F%2Fgithub.com%2Fakeslo%2FHA-PUPPET-TRMNL)
 
 You will need to create a long lived access token and add it as an add-on option.
 

@@ -3,11 +3,13 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-Home Assistant add-on repository containing experimental add-ons. Currently contains **Puppet**: a Puppeteer-based scheduled screenshot service that automatically captures Home Assistant dashboards and saves them to disk, optimized for e-ink displays and other screen types.
+Home Assistant add-on repository. Contains **Automated Puppet**: a Puppeteer-based scheduled screenshot service that automatically captures Home Assistant dashboards and saves them to disk, optimized for e-ink displays and other screen types.
+
+This is a fork of the original Puppet add-on, refactored from an HTTP server to a scheduled background process.
 
 ## Architecture
 
-### Puppet Add-on Structure
+### Automated Puppet Add-on Structure
 - **Scheduler** (`scheduler.js`): Main entry point that manages scheduled screenshot jobs based on JSON configuration
 - **Browser Management** (`screenshot.js`): Puppeteer wrapper managing Chromium lifecycle, page navigation, and screenshot capture
 - **File Manager** (`file-manager.js`): Handles saving screenshots to `/config/www/screenshots/` with organized folder structure

@@ -1,12 +1,12 @@
-# Quick Start Guide - Puppet Scheduled Screenshots
+# Quick Start Guide - Automated Puppet
 
 ## Installation
 
 1. Add this repository to Home Assistant:
    - Go to **Supervisor** → **Add-on Store** → **⋮** (menu) → **Repositories**
-   - Add: `https://github.com/balloob/home-assistant-addons`
+   - Add: `https://github.com/akeslo/HA-PUPPET-TRMNL`
 
-2. Install the **Puppet** add-on
+2. Install the **Automated Puppet** add-on
 
 3. Configure the add-on:
    ```yaml
@@ -184,4 +184,8 @@ You can configure different update intervals for different screenshots:
 ## Support
 
 For issues and feature requests, visit:
-https://github.com/balloob/home-assistant-addons/issues
+https://github.com/akeslo/HA-PUPPET-TRMNL/issues
+
+## Credits
+
+This add-on is a fork of the original [Puppet](https://github.com/balloob/home-assistant-addons) add-on by Paulus Schoutsen, refactored to use scheduled screenshots instead of an HTTP server.
