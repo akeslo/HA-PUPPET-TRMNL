@@ -1,6 +1,6 @@
-# Screenshot Home Assistant using Puppeteer
+# Screenshot Home Assistant using Puppeteer (Scheduled Mode)
 
-Experiment to easily create screenshots of your dashboards using Puppeteer. Allowing you to put them on e-ink screens or any other screen that can display images.
+Automatically capture screenshots of your Home Assistant dashboards on a schedule using Puppeteer. Screenshots are saved to the `/config/www/screenshots/` directory and are accessible via Home Assistant's local media system.
 
 [![Open your Home Assistant instance and show the dashboard of an add-on.](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=0f1cc410_puppet&repository_url=https%3A%2F%2Fgithub.com%2Fballoob%2Fhome-assistant-addons)
 
@@ -8,127 +8,150 @@ You will need to create a long lived access token and add it as an add-on option
 
 Enable the watch dog option to restart the add-on when the browser fails to launch (happens sometimes, still investigating).
 
-_This is a prototype, there is NO security. Anyone can access the server and make screenshots of any Home Assistant page._
-
 [![ESPHome device showing a screenshot of a Home Assistant dashboard](https://raw.githubusercontent.com/balloob/home-assistant-addons/main/puppet/example/screenshot.jpg)](./example/)
 
-## Configuration
+## Add-on Configuration
 
-- access_token: Long-lived access token used to authenticate against Home Assistant.
+- **access_token**: Long-lived access token used to authenticate against Home Assistant. (Required)
+- **home_assistant_url**: Base URL of your Home Assistant instance that the add-on browser should open when taking screenshots. Defaults to `http://homeassistant:8123` which is the internal URL at which the add-on can reach Home Assistant. You can override it if your instance has configured SSL certificates inside Home Assistant and requires to be reached via a different hostname or port (e.g., http://my-ha.local:8123 or https://example.duckdns.org).
 
-## Advanced configuration
+## Screenshot Configuration
 
-- home_assistant_url: Base URL of your Home Assistant instance that the add-on browser should open when taking screenshots. Defaults to `http://homeassistant:8123` which is the internal URL at which the add-on can reach Home Assistant. You can override it if your instance has configured SSL certificates inside Home Assistant and requires to be reached via a different hostname or port (e.g., http://my-ha.local:8123 or https://example.duckdns.org).
-- keep_browser_open: If true, keeps the Chromium browser alive between requests.
+After installing the add-on, you must create a screenshot configuration file at `/config/screenshots.json` that defines what to capture and how often.
+
+### Example Configuration
+
+Create `/config/screenshots.json`:
+
+```json
+{
+  "screenshots": [
+    {
+      "name": "main-dashboard",
+      "path": "/lovelace/0",
+      "viewport": {
+        "width": 1000,
+        "height": 1000
+      },
+      "interval": 300
+    },
+    {
+      "name": "eink-display",
+      "path": "/dashboard-dashboards/waveshare",
+      "viewport": {
+        "width": 800,
+        "height": 480
+      },
+      "interval": 60,
+      "format": "png",
+      "eink": 2,
+      "theme": "Graphite E-ink Light"
+    }
+  ]
+}
+```
+
+### Configuration Options
+
+Each screenshot object supports:
+
+**Required:**
+- `name`: Unique identifier (used for folder/file naming, no spaces recommended)
+- `path`: Home Assistant path to capture (e.g., `/lovelace/0`)
+- `viewport`: Object with `width` and `height` in pixels
+- `interval`: How often to capture in seconds (minimum 1)
+
+**Optional:**
+- `format`: Output format - `png` (default), `jpeg`, `webp`, or `bmp`
+- `eink`: Number of colors for e-ink displays (2, 4, 8, 16, or 256)
+- `invert`: Invert colors (boolean, only for `eink: 2`)
+- `zoom`: Zoom level (default: 1)
+- `rotate`: Rotation angle - 90, 180, or 270 degrees
+- `lang`: Language code (e.g., `en`, `nl`, `de`, `ko`, `ja`)
+- `theme`: Home Assistant theme name (e.g., `Graphite E-ink Light`)
+- `dark`: Enable dark mode (boolean)
+- `wait`: Extra wait time in milliseconds after page load
 
 ## Usage
 
-Starting the add-on will launch a new server on port 10000. Any path you request will return a screenshot of that page. You will need to specify the viewport size you want.
+Once the add-on is running with a valid configuration:
 
-For example, to get a 1000px x 1000px screenshot of your default dashboard, fetch:
+1. Screenshots are automatically captured according to your configured intervals
+2. Files are saved to `/config/www/screenshots/<name>/latest.<format>`
+3. Each screenshot is accessible in Home Assistant at the URL: `/local/screenshots/<name>/latest.<format>`
 
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000
-```
+### Accessing Screenshots
 
-### e-ink displays
+You can use the screenshots in:
 
-To reduce the color palette for e-ink displays, you can add the `eink` parameter. The value represents the number of colors (including black) to use. For example, for a 2-color e-ink display:
-
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&eink=2
-```
-
-If you are using `eink=2`, you can also invert the colors by adding the `invert` parameter:
-
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&eink=2&invert
+**Picture cards:**
+```yaml
+type: picture
+image: /local/screenshots/main-dashboard/latest.png
 ```
 
-It's recommended to use an e-ink theme like [Graphite](https://github.com/TilmanGriesel/graphite?tab=readme-ov-file#e-ink-themes) to optimize readability.
-
-### Set Theme
-
-You can set the theme of the Home Assistant interface for the screenshot by adding the `theme` query parameter. The value should be a theme name that Home Assistant supports (e.g., `Graphite E-ink Light`).
-
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&theme=Graphite%20E-ink%20Light
-```
-
-### Finish loading detection
-
-By default, on a cold start the server will wait for 2.5 extra seconds after the loading is considered done, to give things that are not tracked by loading spinners to load (ie icons, pictures). When the browser is active, it waits 750ms. You can control this wait time by adding a `wait` query parameter. For example, to wait 10 seconds:
-
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&wait=10000
+**ESPHome displays:**
+```yaml
+online_image:
+  - id: dashboard_image
+    format: PNG
+    type: RGB
+    url: http://homeassistant.local:8123/local/screenshots/eink-display/latest.png
 ```
 
-You can control the zoom level of the page using the `zoom` query parameter. The default zoom level is 1. For example, to zoom in 1.3x:
+**Automations and scripts:**
+Reference the screenshot files in notifications, image processing, etc.
 
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&zoom=1.3
-```
+### E-ink Display Optimization
 
-### Output formats
+For e-ink displays, it's recommended to:
+- Use `"eink": 2` for black and white displays
+- Set a compatible theme like [Graphite E-ink Light](https://github.com/TilmanGriesel/graphite?tab=readme-ov-file#e-ink-themes)
+- Use `"format": "png"` or `"format": "bmp"`
+- Consider using `"invert": true` if your display requires inverted colors
 
-By default, the output format is PNG. You can request a JPEG, WebP or BMP image by adding the `format=jpeg`, `format=webp`, `format=bmp` query parameter:
+## Performance Notes
 
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&format=jpeg
-```
+Screenshot capture timing on Home Assistant Green:
+- First screenshot (cold-start): ~10 seconds
+- Same page (warm): ~0.6 seconds
+- Different page navigation: ~1.5 seconds
 
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&format=webp
-```
-
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&format=bmp
-```
-
-**Note:** If the `eink` parameter is specified, the output format is limited to BMP and PNG.
-
-### Rotate screenshot
-
-You can rotate the screenshot by adding the `rotate` query parameter. Valid values are 90, 180, and 270.
-
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&rotate=90
-```
-
-### Set Language
-
-You can set the language of the Home Assistant interface for the screenshot by adding the `lang` query parameter. The value should be a language code that Home Assistant supports (e.g., `en`, `nl`, `de`, `ko`, `ja`, `zh-Hans`, `zh-Hant`).
-
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&lang=nl
-```
-
-### Set Dark Mode
-
-You can enable dark mode for the screenshot by adding the `dark` query parameter. This parameter doesn't require a value.
-
-```
-http://homeassistant.local:10000/lovelace/0?viewport=1000x1000&dark
-```
-
-### Preloading requests
-
-To improve performance for subsequent requests, you can schedule the browser to navigate to the desired page ahead of time using the `next` parameter. Provide the number of seconds when you expect the *next* screenshot request to occur. The add-on will attempt to navigate the browser to the specified path 10 seconds *before* this timestamp.
-
-```
-# Example how the browser will warm up so it's ready to take a screenshot
-# in 300 seconds.
-http://homeassistant.local:10000/lovelace/0?next=300
-```
-
-Providing a `next` parameter will not affect the current request. It will only be used for the next request.
+The browser stays active between captures to minimize overhead.
 
 ## Proxmox
 
 If you're running Home Assistant OS in a virtual machine under Proxmox, make sure the host type of your virtual machine is set to `host`.
 
-## Speed (or lack thereof)
+## Local Development
 
-This add-on is slow. On a Home Assistant Green, on cold-start, it takes ~10s. The browser is kept alive for up to 30 seconds.
+For local testing outside of Home Assistant:
 
-If the same page is requested, a screenshot is returned as fast as possible (0.6s on HA Green). If a different page is requested, it takes ~1.5s because it needs to navigate.
+1. Copy `puppet/ha-puppet/screenshots-example.json` to `puppet/ha-puppet/screenshots-dev.json`
+2. Edit the configuration with your desired screenshots
+3. Copy `puppet/ha-puppet/options-dev.json.sample` to `puppet/ha-puppet/options-dev.json`
+4. Add your Home Assistant URL and access token
+5. Install dependencies: `cd puppet/ha-puppet && npm ci`
+6. Run: `node scheduler.js`
+
+Screenshots will be saved to `./output/` directory.
+
+## Migration from HTTP Server Mode
+
+If you previously used the HTTP server version of this add-on:
+
+**Old method:** ESPHome devices fetched screenshots on-demand via HTTP
+```yaml
+url: http://X.X.X.X:10000/lovelace/0?viewport=800x480
+```
+
+**New method:** Screenshots are pre-generated and served via Home Assistant's built-in web server
+```yaml
+url: http://homeassistant.local:8123/local/screenshots/main-dashboard/latest.png
+```
+
+Benefits:
+- No open ports or security concerns
+- Faster response times (pre-rendered)
+- Automatic scheduling
+- Organized file storage

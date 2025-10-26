@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Puppet Scheduler Configuration",
+  "description": "Configuration for scheduled Home Assistant dashboard screenshots",
+  "type": "object",
+  "properties": {
+    "screenshots": {
+      "type": "array",
+      "description": "List of screenshots to capture on a schedule",
+      "items": {
+        "type": "object",
+        "required": ["name", "path", "viewport", "interval"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Unique identifier for this screenshot (used for folder/file naming)"
+          },
+          "path": {
+            "type": "string",
+            "description": "Home Assistant path to capture (e.g., /lovelace/0)"
+          },
+          "viewport": {
+            "type": "object",
+            "required": ["width", "height"],
+            "properties": {
+              "width": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "interval": {
+            "type": "integer",
+            "description": "Refresh interval in seconds",
+            "minimum": 1
+          },
+          "format": {
+            "type": "string",
+            "enum": ["png", "jpeg", "webp", "bmp"],
+            "default": "png"
+          },
+          "eink": {
+            "type": "integer",
+            "description": "Number of colors for e-ink displays (2, 4, 8, 16, or 256)",
+            "enum": [2, 4, 8, 16, 256]
+          },
+          "invert": {
+            "type": "boolean",
+            "default": false,
+            "description": "Invert colors (only for eink=2)"
+          },
+          "zoom": {
+            "type": "number",
+            "default": 1,
+            "minimum": 0.1,
+            "maximum": 5
+          },
+          "rotate": {
+            "type": "integer",
+            "enum": [90, 180, 270],
+            "description": "Rotation angle in degrees"
+          },
+          "lang": {
+            "type": "string",
+            "description": "Language code (e.g., en, nl, de, ko)"
+          },
+          "theme": {
+            "type": "string",
+            "description": "Home Assistant theme name"
+          },
+          "dark": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable dark mode"
+          },
+          "wait": {
+            "type": "integer",
+            "description": "Extra wait time in milliseconds after page load"
+          }
+        }
+      }
+    }
+  },
+  "required": ["screenshots"]
+}

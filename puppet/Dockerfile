@@ -44,6 +44,6 @@ COPY ha-puppet/ .
 # Set Puppeteer to use Alpine Chromium
 # ENV PUPPETEER_EXECUTABLE_PATH="/usr/bin/chromium"
 
-# Run the application
-CMD ["node", "http.js"]
+# Run the scheduler application
+CMD ["node", "scheduler.js"]
 

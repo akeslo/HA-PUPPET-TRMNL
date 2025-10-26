@@ -1,0 +1,38 @@
+{
+  "screenshots": [
+    {
+      "name": "main-dashboard",
+      "path": "/lovelace/0",
+      "viewport": {
+        "width": 1000,
+        "height": 1000
+      },
+      "interval": 300,
+      "format": "png"
+    },
+    {
+      "name": "eink-dashboard",
+      "path": "/dashboard-dashboards/waveshare",
+      "viewport": {
+        "width": 800,
+        "height": 480
+      },
+      "interval": 60,
+      "format": "png",
+      "eink": 2,
+      "theme": "Graphite E-ink Light"
+    },
+    {
+      "name": "tablet-view",
+      "path": "/lovelace/tablet",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "interval": 120,
+      "format": "jpeg",
+      "zoom": 1.2,
+      "dark": true
+    }
+  ]
+}
