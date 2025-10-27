@@ -125,15 +125,14 @@ export class Browser {
       .on("error", (err) => logger.error("Browser error:", err.message))
       .on("pageerror", ({ message }) => {
         // Suppress common Home Assistant JS errors that don't affect screenshots
+        const messageStr = String(message);
         const suppressedErrors = [
           'undefined',
           'Object',
           'Failed to set an indexed property',
           'CSSStyleDeclaration'
         ];
-        const shouldSuppress = suppressedErrors.some(err =>
-          typeof message === 'string' && message.includes(err)
-        );
+        const shouldSuppress = suppressedErrors.some(err => messageStr.includes(err));
         if (!shouldSuppress) {
           logger.error("Page error:", message);
         } else {

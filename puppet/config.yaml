@@ -1,6 +1,6 @@
 name: "Automated Puppet"
 description: "Scheduled screenshot capture of Home Assistant dashboards"
-version: "2.2.1"
+version: "2.2.2"
 slug: "automated-puppet"
 homeassistant_api: true
 init: false
