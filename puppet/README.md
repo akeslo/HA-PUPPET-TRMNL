@@ -1,14 +1,29 @@
-# Automated Puppet - Scheduled Home Assistant Screenshots
+# Dashboard Scheduler
 
-Automatically capture screenshots of your Home Assistant dashboards on a schedule using Puppeteer. Screenshots are saved to the `/config/www/screenshots/` directory and are accessible via Home Assistant's local media system.
+Automatically capture screenshots of your Home Assistant dashboards on a schedule. Screenshots are saved to the `/config/www/screenshots/` directory and are accessible via Home Assistant's local media system.
 
-**This is a fork of the original Puppet add-on**, redesigned to run as a scheduled background process instead of an HTTP server. It can be installed alongside the original Puppet add-on via HACS.
+**Built with Puppeteer** for high-quality dashboard rendering. Perfect for e-ink displays, picture frames, and automated dashboard exports.
+
+## Features
+
+✨ **Scheduled Capture** - Automatically screenshot dashboards at custom intervals (10 seconds to 24 hours)
+🎨 **E-ink Optimization** - Built-in color reduction (2-256 colors) for e-ink displays
+📐 **Flexible Sizing** - Any resolution from 100x100 to 7680x4320 pixels
+🔄 **Multiple Formats** - Export as PNG, JPEG, WebP, or BMP
+🌍 **Multi-language** - Support for all Home Assistant languages
+🎭 **Theme Support** - Apply any HA theme including custom e-ink themes
+📁 **Local Storage** - Files saved to `/config/www/` for easy access
+⚡ **Fast Updates** - Warm captures in under 1 second
 
 [![Open your Home Assistant instance and show the dashboard of an add-on.](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=a8d03a84_automated-puppet&repository_url=https%3A%2F%2Fgithub.com%2Fakeslo%2FHA-PUPPET-TRMNL)
 
-You will need to create a long lived access token and add it as an add-on option.
+## Quick Start
 
-Enable the watch dog option to restart the add-on when the browser fails to launch (happens sometimes, still investigating).
+1. Install the add-on from this repository
+2. Create a [long-lived access token](https://my.home-assistant.io/redirect/profile/) in Home Assistant
+3. Configure the add-on with your token and desired screenshots
+4. Start the add-on - screenshots will be automatically captured!
+5. Access screenshots at `/local/screenshots/<name>/latest.png`
 
 [![ESPHome device showing a screenshot of a Home Assistant dashboard](https://raw.githubusercontent.com/balloob/home-assistant-addons/main/puppet/example/screenshot.jpg)](./example/)
 
