@@ -1,6 +1,6 @@
 name: "Automated Puppet"
 description: "Scheduled screenshot capture of Home Assistant dashboards"
-version: "2.2.3"
+version: "2.2.4"
 slug: "automated-puppet"
 homeassistant_api: true
 init: false
@@ -28,12 +28,12 @@ schema:
       width: int(100,7680)
       height: int(100,4320)
       interval: int(10,86400)
-      format: list(png|jpeg|webp|bmp)?
-      eink: list(2|4|8|16|256)?
-      invert: bool?
-      zoom: float(0.1,5.0)?
-      rotate: list(90|180|270)?
-      lang: str?
-      theme: str?
-      dark: bool?
-      wait: int(0,30000)?
+      format?: list(png|jpeg|webp|bmp)
+      eink?: int(2,256)
+      invert?: bool
+      zoom?: float(0.1,5.0)
+      rotate?: int
+      lang?: str
+      theme?: str
+      dark?: bool
+      wait?: int(0,30000)
