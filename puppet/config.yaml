@@ -1,7 +1,7 @@
-name: "Puppet"
-description: "Turn dashboards into nice pictures"
+name: "Dashboard Scheduler"
+description: "Scheduled screenshot capture of Home Assistant dashboards"
 version: "0.1.0"
-slug: "puppet"
+slug: "dashboard-scheduler"
 homeassistant_api: true
 init: false
 arch:
