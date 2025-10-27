@@ -255,6 +255,9 @@ function loadConfiguration() {
  * Main entry point
  */
 async function main() {
+  // Clear console on startup for clean logs
+  console.clear();
+
   logger.info("=== Automated Puppet ===");
 
   // Load configuration
