@@ -28,11 +28,11 @@ schema:
       width: int(100,7680)
       height: int(100,4320)
       interval: int(10,86400)
-      format: select(png|jpeg|webp|bmp)?
-      eink: select(2|4|8|16|256)?
+      format: list(png|jpeg|webp|bmp)?
+      eink: list(2|4|8|16|256)?
       invert: bool?
       zoom: float(0.1,5.0)?
-      rotate: select(90|180|270)?
+      rotate: list(90|180|270)?
       lang: str?
       theme: str?
       dark: bool?
