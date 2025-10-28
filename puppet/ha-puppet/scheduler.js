@@ -146,7 +146,7 @@ class ScreenshotScheduler {
   /**
    * Schedule a recurring screenshot job
    */
-  scheduleJob(screenshotConfig) {
+  scheduleJob(screenshotConfig, startupDelayMs = 0) {
     const { name, interval } = screenshotConfig;
 
     if (this.jobs.has(name)) {
@@ -156,8 +156,16 @@ class ScreenshotScheduler {
 
     logger.info(`Scheduled "${name}" every ${interval}s → ${screenshotConfig.path}`);
 
-    // Capture immediately on startup
-    this.captureScreenshot(screenshotConfig);
+    // Capture with optional startup delay to stagger multiple jobs
+    if (startupDelayMs > 0) {
+      setTimeout(() => {
+        if (!this.isShuttingDown) {
+          this.captureScreenshot(screenshotConfig);
+        }
+      }, startupDelayMs);
+    } else {
+      this.captureScreenshot(screenshotConfig);
+    }
 
     // Schedule recurring captures
     const intervalMs = interval * 1000;
@@ -183,9 +191,13 @@ class ScreenshotScheduler {
       const config = this.loadConfig();
       logger.info(`Loaded ${config.screenshots.length} screenshot configuration(s)`);
 
-      // Schedule each screenshot
-      config.screenshots.forEach((screenshot) => {
-        this.scheduleJob(screenshot);
+      // Schedule each screenshot with staggered startup delays
+      // This prevents "Browser is busy" errors when multiple screenshots
+      // are configured with the same interval
+      const STAGGER_DELAY = 2000; // 2 seconds between each initial capture
+      config.screenshots.forEach((screenshot, index) => {
+        const startupDelay = index * STAGGER_DELAY;
+        this.scheduleJob(screenshot, startupDelay);
       });
 
       logger.info(`All jobs scheduled successfully`);

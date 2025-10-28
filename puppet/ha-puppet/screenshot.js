@@ -62,6 +62,8 @@ export class Browser {
     this.browser = undefined;
     this.page = undefined;
     this.busy = false;
+    this.queue = [];
+    this.processing = false;
 
     // The last path we requested a screenshot for
     // We store this instead of using page.url() because panels can redirect
@@ -103,6 +105,40 @@ export class Browser {
     }
 
     logger.debug("Browser closed");
+  }
+
+  /**
+   * Add a task to the queue
+   */
+  async enqueue(taskFn) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ taskFn, resolve, reject });
+      this.processQueue();
+    });
+  }
+
+  /**
+   * Process tasks from the queue sequentially
+   */
+  async processQueue() {
+    // If already processing, let that execution handle the queue
+    if (this.processing || this.queue.length === 0) {
+      return;
+    }
+
+    this.processing = true;
+
+    while (this.queue.length > 0) {
+      const { taskFn, resolve, reject } = this.queue.shift();
+      try {
+        const result = await taskFn();
+        resolve(result);
+      } catch (err) {
+        reject(err);
+      }
+    }
+
+    this.processing = false;
   }
 
   async getPage() {
@@ -150,7 +186,11 @@ export class Browser {
     return this.page;
   }
 
-  async navigatePage({
+  async navigatePage(params) {
+    return this.enqueue(() => this._navigatePage(params));
+  }
+
+  async _navigatePage({
     pagePath,
     viewport,
     extraWait,
@@ -159,12 +199,7 @@ export class Browser {
     theme,
     dark,
   }) {
-    let start = new Date();
-    if (this.busy) {
-      throw new Error("Browser is busy");
-    }
-    start = new Date();
-    this.busy = true;
+    const start = new Date();
     const headerHeight = Math.round(HEADER_HEIGHT * zoom);
 
     try {
@@ -352,18 +387,17 @@ export class Browser {
 
       const end = Date.now();
       return { time: end - start };
-    } finally {
-      this.busy = false;
+    } catch (err) {
+      throw err;
     }
   }
 
-  async screenshotPage({ viewport, einkColors, invert, zoom, format, rotate }) {
-    let start = new Date();
-    if (this.busy) {
-      throw new Error("Browser is busy");
-    }
-    start = new Date();
-    this.busy = true;
+  async screenshotPage(params) {
+    return this.enqueue(() => this._screenshotPage(params));
+  }
+
+  async _screenshotPage({ viewport, einkColors, invert, zoom, format, rotate }) {
+    const start = new Date();
     const headerHeight = Math.round(HEADER_HEIGHT * zoom);
 
     try {
@@ -467,8 +501,6 @@ export class Browser {
       // trigger a full page navigation on next request
       this.lastRequestedPath = undefined;
       throw err;
-    } finally {
-      this.busy = false;
     }
   }
 }
