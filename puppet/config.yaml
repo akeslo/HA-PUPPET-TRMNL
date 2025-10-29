@@ -1,6 +1,6 @@
 name: "Dashboard Scheduler"
 description: "Scheduled screenshot capture of Home Assistant dashboards"
-version: "0.1.3"
+version: "0.1.4"
 slug: "dashboard-scheduler"
 homeassistant_api: true
 init: false

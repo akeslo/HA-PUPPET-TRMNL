@@ -267,20 +267,18 @@ export class Browser {
       } else if (this.lastRequestedPath !== pagePath) {
         changedPath = true;
 
-        // mimick HA frontend navigation (no full reload)
-        await page.evaluate((pagePath) => {
-          history.replaceState(
-            history.state?.root ? { root: true } : null,
-            "",
-            pagePath,
-          );
-          const event = new Event("location-changed");
-          event.detail = { replace: true };
-          window.dispatchEvent(event);
-        }, pagePath);
+        // Navigate to the new page with a full URL reload
+        // The event-based navigation wasn't reliably changing Lovelace views
+        const pageUrl = new URL(pagePath, this.homeAssistantUrl).toString();
+        logger.debug(`Navigating from ${this.lastRequestedPath} to ${pagePath}`);
 
-        // Increase wait time for page change to allow new content to load
-        defaultWait = isAddOn ? 1500 : 1000;
+        const response = await page.goto(pageUrl, { waitUntil: 'networkidle0' });
+        if (!response.ok()) {
+          throw new CannotOpenPageError(response.status(), pageUrl);
+        }
+
+        // Full page reload needs more time
+        defaultWait = isAddOn ? 3000 : 2000;
       } else {
         // We are already on the correct page
         defaultWait = 0;
