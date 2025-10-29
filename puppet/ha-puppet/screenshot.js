@@ -153,6 +153,7 @@ export class Browser {
       headless: "shell",
       executablePath: chromiumExecutable,
       args: puppeteerArgs,
+      protocolTimeout: 300000, // 5 minutes for slow devices like Home Assistant Green
     });
     const page = await browser.newPage();
 
