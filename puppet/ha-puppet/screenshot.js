@@ -424,6 +424,7 @@ export class Browser {
       }
 
       const end = Date.now();
+      logger.info(`[NAV] Navigation complete, took ${end - start}ms`);
       return { time: end - start };
     } catch (err) {
       throw err;
@@ -431,6 +432,7 @@ export class Browser {
   }
 
   async screenshotPage(params) {
+    logger.info(`[QUEUE] Enqueueing screenshot request`);
     return this.enqueue(() => this._screenshotPage(params));
   }
 
@@ -438,7 +440,7 @@ export class Browser {
     const start = new Date();
     const headerHeight = Math.round(HEADER_HEIGHT * zoom);
 
-    logger.info(`[SCREENSHOT] Taking screenshot, currentlastRequestedPath: ${this.lastRequestedPath}`);
+    logger.info(`[SCREENSHOT] Taking screenshot, current lastRequestedPath: ${this.lastRequestedPath}`);
 
     try {
       const page = await this.getPage();
@@ -533,6 +535,7 @@ export class Browser {
       }
 
       const end = Date.now();
+      logger.info(`[SCREENSHOT] Screenshot complete, took ${end - start}ms`);
       return {
         image,
         time: end - start,
