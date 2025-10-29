@@ -221,6 +221,7 @@ export class Browser {
 
       let defaultWait = isAddOn ? 2000 : 1000;
       let openedNewPage = false;
+      let changedPath = false;
 
       // If we're still on about:blank, navigate to HA UI
       if (this.lastRequestedPath === undefined) {
@@ -264,6 +265,8 @@ export class Browser {
           defaultWait += 5000;
         }
       } else if (this.lastRequestedPath !== pagePath) {
+        changedPath = true;
+
         // mimick HA frontend navigation (no full reload)
         await page.evaluate((pagePath) => {
           history.replaceState(
@@ -275,6 +278,9 @@ export class Browser {
           event.detail = { replace: true };
           window.dispatchEvent(event);
         }, pagePath);
+
+        // Increase wait time for page change to allow new content to load
+        defaultWait = isAddOn ? 1500 : 1000;
       } else {
         // We are already on the correct page
         defaultWait = 0;
@@ -335,12 +341,17 @@ export class Browser {
             return !("_loading" in panel) || !panel._loading;
           },
           {
-            timeout: 10000,
+            timeout: 15000,
             polling: 100,
           },
         );
       } catch (err) {
         console.log("Timeout waiting for HA to finish loading");
+      }
+
+      // If we changed pages, add extra delay to ensure new content is rendered
+      if (changedPath) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
       // Update language
