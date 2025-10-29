@@ -14,6 +14,35 @@ class ScreenshotScheduler {
     this.fileManager = fileManager;
     this.jobs = new Map();
     this.isShuttingDown = false;
+    this.offHours = null; // { start: "HH:MM", end: "HH:MM" }
+  }
+
+  /**
+   * Check if current time is within off-hours window
+   * @returns {boolean} true if currently in off-hours (screenshots should be skipped)
+   */
+  isOffHours() {
+    if (!this.offHours) {
+      return false;
+    }
+
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // Parse start and end times
+    const [startHour, startMin] = this.offHours.start.split(':').map(Number);
+    const [endHour, endMin] = this.offHours.end.split(':').map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+
+    // Handle cases where off-hours spans midnight
+    if (startMinutes <= endMinutes) {
+      // Same day range (e.g., 09:00 - 17:00)
+      return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+    } else {
+      // Spans midnight (e.g., 22:00 - 06:00)
+      return currentMinutes >= startMinutes || currentMinutes < endMinutes;
+    }
   }
 
   /**
@@ -38,6 +67,28 @@ class ScreenshotScheduler {
       throw new Error(
         'Configuration must contain a "screenshots" array property',
       );
+    }
+
+    // Validate and store off-hours configuration if present
+    if (config.off_hours) {
+      if (!config.off_hours.start || !config.off_hours.end) {
+        throw new Error('off_hours must contain both "start" and "end" properties');
+      }
+
+      const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;
+      if (!timeRegex.test(config.off_hours.start)) {
+        throw new Error(`Invalid off_hours start time: ${config.off_hours.start} (must be HH:MM format)`);
+      }
+      if (!timeRegex.test(config.off_hours.end)) {
+        throw new Error(`Invalid off_hours end time: ${config.off_hours.end} (must be HH:MM format)`);
+      }
+
+      this.offHours = {
+        start: config.off_hours.start,
+        end: config.off_hours.end,
+      };
+
+      logger.info(`Off-hours configured: ${this.offHours.start} - ${this.offHours.end}`);
     }
 
     // Validate and normalize each screenshot config
@@ -86,6 +137,12 @@ class ScreenshotScheduler {
    */
   async captureScreenshot(screenshotConfig) {
     const { name } = screenshotConfig;
+
+    // Check if currently in off-hours
+    if (this.isOffHours()) {
+      logger.debug(`Skipping "${name}" - currently in off-hours (${this.offHours.start} - ${this.offHours.end})`);
+      return { success: false, skipped: true, reason: 'off-hours' };
+    }
 
     try {
       logger.info(`Capturing "${name}" from ${screenshotConfig.path}`);
@@ -235,7 +292,12 @@ function loadConfiguration() {
     const options = JSON.parse(readFileSync(optionsFile, "utf8"));
     if (options.screenshots && Array.isArray(options.screenshots)) {
       logger.info("Using configuration from add-on options");
-      return { screenshots: options.screenshots };
+      const config = { screenshots: options.screenshots };
+      // Include off_hours if configured
+      if (options.off_hours) {
+        config.off_hours = options.off_hours;
+      }
+      return config;
     }
   }
 

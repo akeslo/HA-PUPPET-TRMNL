@@ -12,6 +12,9 @@ map:
 options:
   access_token: ""
   home_assistant_url: "http://homeassistant:8123"
+  off_hours:
+    start: "23:00"
+    end: "07:00"
   screenshots:
     - name: "main-dashboard"
       path: "/lovelace/0"
@@ -22,6 +25,9 @@ options:
 schema:
   access_token: password
   home_assistant_url: str
+  off_hours:
+    start: str?
+    end: str?
   screenshots:
     - name: str
       path: str

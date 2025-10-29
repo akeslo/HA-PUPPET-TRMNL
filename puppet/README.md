@@ -36,6 +36,15 @@ Configure the add-on through the **Configuration** tab in Home Assistant:
 - **access_token**: Long-lived access token used to authenticate against Home Assistant. (Required)
 - **home_assistant_url**: Base URL of your Home Assistant instance. Defaults to `http://homeassistant:8123`
 
+### Off-Hours (Optional)
+
+Prevent screenshots from being captured during specified hours. Useful for saving resources during nighttime or when displays are not in use.
+
+- **start**: Start time in 24-hour format (e.g., `"23:00"`)
+- **end**: End time in 24-hour format (e.g., `"07:00"`)
+
+Off-hours can span midnight (e.g., 23:00 to 07:00 will skip captures from 11 PM to 7 AM).
+
 ### Screenshot Configuration
 
 Define one or more screenshots to capture automatically. Click the **+** button to add screenshots.
@@ -63,6 +72,9 @@ Define one or more screenshots to capture automatically. Click the **+** button 
 ```yaml
 access_token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
 home_assistant_url: "http://homeassistant:8123"
+off_hours:
+  start: "23:00"
+  end: "07:00"
 screenshots:
   - name: main-dashboard
     path: /lovelace/0
