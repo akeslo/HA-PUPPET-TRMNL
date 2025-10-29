@@ -293,29 +293,44 @@ export class Browser {
       } else if (this.lastRequestedPath !== pagePath) {
         changedPath = true;
 
-        // Use fast event-based navigation (mimics HA frontend behavior)
+        // Navigate to the new page with a full URL reload
+        // The event-based navigation wasn't reliably changing Lovelace views
+        const pageUrl = new URL(pagePath, this.homeAssistantUrl).toString();
         logger.debug(`Navigating from ${this.lastRequestedPath} to ${pagePath}`);
 
-        // Mark when we started navigation to detect updates
-        const navigationStartTime = Date.now();
+        // Re-inject authentication tokens before navigation since page.goto() clears localStorage
+        const clientId = new URL("/", this.homeAssistantUrl).toString();
+        const hassUrl = clientId.substring(0, clientId.length - 1);
+        const browserLocalStorage = {
+          ...hassLocalStorageDefaults,
+          hassTokens: JSON.stringify({
+            access_token: this.token,
+            token_type: "Bearer",
+            expires_in: 1800,
+            hassUrl,
+            clientId,
+            expires: 9999999999999,
+            refresh_token: "",
+          }),
+        };
+        const evaluateIdentifier = await page.evaluateOnNewDocument(
+          (hassLocalStorage) => {
+            for (const [key, value] of Object.entries(hassLocalStorage)) {
+              localStorage.setItem(key, value);
+            }
+          },
+          browserLocalStorage,
+        );
 
-        // Trigger HA navigation event
-        await page.evaluate((pagePath) => {
-          history.replaceState(
-            history.state?.root ? { root: true } : null,
-            "",
-            pagePath,
-          );
-          const event = new Event("location-changed");
-          event.detail = { replace: true };
-          window.dispatchEvent(event);
-        }, pagePath);
+        const response = await page.goto(pageUrl, { waitUntil: 'networkidle0' });
+        if (!response.ok()) {
+          throw new CannotOpenPageError(response.status(), pageUrl);
+        }
 
-        // Wait briefly for navigation to trigger panel updates
-        await new Promise(resolve => setTimeout(resolve, 500));
+        page.removeScriptToEvaluateOnNewDocument(evaluateIdentifier.identifier);
 
-        // Event-based navigation is fast
-        defaultWait = isAddOn ? 750 : 500;
+        // Full page reload needs more time
+        defaultWait = isAddOn ? 3000 : 2000;
       } else {
         // We are already on the correct page
         defaultWait = 0;
@@ -355,8 +370,6 @@ export class Browser {
       }
 
       // Wait for the page to be loaded.
-      // For event-based navigation, use shorter timeout since content should already be there
-      const loadTimeout = changedPath ? 3000 : 15000;
       try {
         await page.waitForFunction(
           () => {
@@ -379,17 +392,17 @@ export class Browser {
             return !("_loading" in panel) || !panel._loading;
           },
           {
-            timeout: loadTimeout,
+            timeout: 15000,
             polling: 100,
           },
         );
       } catch (err) {
-        logger.debug(`Panel load detection timed out after ${loadTimeout}ms`);
+        console.log("Timeout waiting for HA to finish loading");
       }
 
       // If we changed pages, add extra delay to ensure new content is rendered
       if (changedPath) {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
       // Update language
