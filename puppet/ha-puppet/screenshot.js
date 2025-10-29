@@ -202,6 +202,8 @@ export class Browser {
     const start = new Date();
     const headerHeight = Math.round(HEADER_HEIGHT * zoom);
 
+    logger.info(`[NAV] Request to navigate to: ${pagePath}, current lastRequestedPath: ${this.lastRequestedPath}`);
+
     try {
       const page = await this.getPage();
 
@@ -311,6 +313,7 @@ export class Browser {
       }
 
       this.lastRequestedPath = pagePath;
+      logger.info(`[NAV] Updated lastRequestedPath to: ${pagePath}`);
 
       // Dismiss any dashboard update avaiable toasts
       if (
@@ -434,6 +437,8 @@ export class Browser {
   async _screenshotPage({ viewport, einkColors, invert, zoom, format, rotate }) {
     const start = new Date();
     const headerHeight = Math.round(HEADER_HEIGHT * zoom);
+
+    logger.info(`[SCREENSHOT] Taking screenshot, currentlastRequestedPath: ${this.lastRequestedPath}`);
 
     try {
       const page = await this.getPage();
