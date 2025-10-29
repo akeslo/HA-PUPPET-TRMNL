@@ -109,12 +109,9 @@ class ScreenshotScheduler {
         dark: screenshotConfig.dark || false,
       };
 
-      // Navigate to page
-      await this.browser.navigatePage(requestParams);
-
-      // Take screenshot
+      // Navigate and screenshot atomically to prevent race conditions
       const screenshotResult =
-        await this.browser.screenshotPage(requestParams);
+        await this.browser.navigateAndScreenshot(requestParams);
 
       // Save to disk
       const savedPath = this.fileManager.saveScreenshot(

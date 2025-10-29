@@ -186,8 +186,32 @@ export class Browser {
     return this.page;
   }
 
+  /**
+   * Atomic operation: navigate AND screenshot in one queue item
+   * This prevents race conditions where other operations slip between nav and screenshot
+   */
+  async navigateAndScreenshot(params) {
+    return this.enqueue(async () => {
+      logger.info(`[ATOMIC] Starting atomic navigate+screenshot operation`);
+      await this._navigatePage(params);
+      const result = await this._screenshotPage(params);
+      logger.info(`[ATOMIC] Atomic operation complete`);
+      return result;
+    });
+  }
+
+  /**
+   * Public method that enqueues navigation
+   */
   async navigatePage(params) {
     return this.enqueue(() => this._navigatePage(params));
+  }
+
+  /**
+   * Direct navigation without queueing (for use within already-queued operations)
+   */
+  async navigatePageDirect(params) {
+    return this._navigatePage(params);
   }
 
   async _navigatePage({
@@ -431,9 +455,19 @@ export class Browser {
     }
   }
 
+  /**
+   * Public method that enqueues screenshot
+   */
   async screenshotPage(params) {
     logger.info(`[QUEUE] Enqueueing screenshot request`);
     return this.enqueue(() => this._screenshotPage(params));
+  }
+
+  /**
+   * Direct screenshot without queueing (for use within already-queued operations)
+   */
+  async screenshotPageDirect(params) {
+    return this._screenshotPage(params);
   }
 
   async _screenshotPage({ viewport, einkColors, invert, zoom, format, rotate }) {
