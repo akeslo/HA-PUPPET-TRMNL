@@ -272,10 +272,36 @@ export class Browser {
         const pageUrl = new URL(pagePath, this.homeAssistantUrl).toString();
         logger.debug(`Navigating from ${this.lastRequestedPath} to ${pagePath}`);
 
+        // Re-inject authentication tokens before navigation since page.goto() clears localStorage
+        const clientId = new URL("/", this.homeAssistantUrl).toString();
+        const hassUrl = clientId.substring(0, clientId.length - 1);
+        const browserLocalStorage = {
+          ...hassLocalStorageDefaults,
+          hassTokens: JSON.stringify({
+            access_token: this.token,
+            token_type: "Bearer",
+            expires_in: 1800,
+            hassUrl,
+            clientId,
+            expires: 9999999999999,
+            refresh_token: "",
+          }),
+        };
+        const evaluateIdentifier = await page.evaluateOnNewDocument(
+          (hassLocalStorage) => {
+            for (const [key, value] of Object.entries(hassLocalStorage)) {
+              localStorage.setItem(key, value);
+            }
+          },
+          browserLocalStorage,
+        );
+
         const response = await page.goto(pageUrl, { waitUntil: 'networkidle0' });
         if (!response.ok()) {
           throw new CannotOpenPageError(response.status(), pageUrl);
         }
+
+        page.removeScriptToEvaluateOnNewDocument(evaluateIdentifier.identifier);
 
         // Full page reload needs more time
         defaultWait = isAddOn ? 3000 : 2000;
