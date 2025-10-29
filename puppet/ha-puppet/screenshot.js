@@ -355,6 +355,8 @@ export class Browser {
       }
 
       // Wait for the page to be loaded.
+      // For event-based navigation, use shorter timeout since content should already be there
+      const loadTimeout = changedPath ? 3000 : 15000;
       try {
         await page.waitForFunction(
           () => {
@@ -377,12 +379,12 @@ export class Browser {
             return !("_loading" in panel) || !panel._loading;
           },
           {
-            timeout: 15000,
+            timeout: loadTimeout,
             polling: 100,
           },
         );
       } catch (err) {
-        console.log("Timeout waiting for HA to finish loading");
+        logger.debug(`Panel load detection timed out after ${loadTimeout}ms`);
       }
 
       // If we changed pages, add extra delay to ensure new content is rendered
