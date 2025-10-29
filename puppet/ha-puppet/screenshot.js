@@ -296,14 +296,8 @@ export class Browser {
         // Use fast event-based navigation (mimics HA frontend behavior)
         logger.debug(`Navigating from ${this.lastRequestedPath} to ${pagePath}`);
 
-        // Get current panel element before navigation to detect change
-        const panelBefore = await page.evaluate(() => {
-          const mainEl = document.querySelector("home-assistant")?.shadowRoot
-            ?.querySelector("home-assistant-main");
-          const panelResolver = mainEl?.shadowRoot?.querySelector("partial-panel-resolver");
-          const panel = panelResolver?.children[0];
-          return panel?.localName || null;
-        });
+        // Mark when we started navigation to detect updates
+        const navigationStartTime = Date.now();
 
         // Trigger HA navigation event
         await page.evaluate((pagePath) => {
@@ -317,33 +311,11 @@ export class Browser {
           window.dispatchEvent(event);
         }, pagePath);
 
-        // Wait for panel to actually change
-        try {
-          await page.waitForFunction(
-            (expectedPanel) => {
-              const mainEl = document.querySelector("home-assistant")?.shadowRoot
-                ?.querySelector("home-assistant-main");
-              const panelResolver = mainEl?.shadowRoot?.querySelector("partial-panel-resolver");
-              const panel = panelResolver?.children[0];
-              const currentPanel = panel?.localName || null;
-
-              // Panel changed and is not loading
-              return currentPanel !== expectedPanel &&
-                     (!panel || !("_loading" in panel) || !panel._loading);
-            },
-            {
-              timeout: 10000,
-              polling: 100,
-            },
-            panelBefore
-          );
-          logger.debug(`Panel changed from ${panelBefore}`);
-        } catch (err) {
-          logger.warn("Panel change detection timed out, continuing anyway");
-        }
+        // Wait briefly for navigation to trigger panel updates
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         // Event-based navigation is fast
-        defaultWait = isAddOn ? 1500 : 1000;
+        defaultWait = isAddOn ? 750 : 500;
       } else {
         // We are already on the correct page
         defaultWait = 0;
@@ -415,7 +387,7 @@ export class Browser {
 
       // If we changed pages, add extra delay to ensure new content is rendered
       if (changedPath) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 1500));
       }
 
       // Update language
