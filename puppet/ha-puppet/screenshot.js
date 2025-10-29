@@ -293,44 +293,57 @@ export class Browser {
       } else if (this.lastRequestedPath !== pagePath) {
         changedPath = true;
 
-        // Navigate to the new page with a full URL reload
-        // The event-based navigation wasn't reliably changing Lovelace views
-        const pageUrl = new URL(pagePath, this.homeAssistantUrl).toString();
+        // Use fast event-based navigation (mimics HA frontend behavior)
         logger.debug(`Navigating from ${this.lastRequestedPath} to ${pagePath}`);
 
-        // Re-inject authentication tokens before navigation since page.goto() clears localStorage
-        const clientId = new URL("/", this.homeAssistantUrl).toString();
-        const hassUrl = clientId.substring(0, clientId.length - 1);
-        const browserLocalStorage = {
-          ...hassLocalStorageDefaults,
-          hassTokens: JSON.stringify({
-            access_token: this.token,
-            token_type: "Bearer",
-            expires_in: 1800,
-            hassUrl,
-            clientId,
-            expires: 9999999999999,
-            refresh_token: "",
-          }),
-        };
-        const evaluateIdentifier = await page.evaluateOnNewDocument(
-          (hassLocalStorage) => {
-            for (const [key, value] of Object.entries(hassLocalStorage)) {
-              localStorage.setItem(key, value);
-            }
-          },
-          browserLocalStorage,
-        );
+        // Get current panel element before navigation to detect change
+        const panelBefore = await page.evaluate(() => {
+          const mainEl = document.querySelector("home-assistant")?.shadowRoot
+            ?.querySelector("home-assistant-main");
+          const panelResolver = mainEl?.shadowRoot?.querySelector("partial-panel-resolver");
+          const panel = panelResolver?.children[0];
+          return panel?.localName || null;
+        });
 
-        const response = await page.goto(pageUrl, { waitUntil: 'networkidle0' });
-        if (!response.ok()) {
-          throw new CannotOpenPageError(response.status(), pageUrl);
+        // Trigger HA navigation event
+        await page.evaluate((pagePath) => {
+          history.replaceState(
+            history.state?.root ? { root: true } : null,
+            "",
+            pagePath,
+          );
+          const event = new Event("location-changed");
+          event.detail = { replace: true };
+          window.dispatchEvent(event);
+        }, pagePath);
+
+        // Wait for panel to actually change
+        try {
+          await page.waitForFunction(
+            (expectedPanel) => {
+              const mainEl = document.querySelector("home-assistant")?.shadowRoot
+                ?.querySelector("home-assistant-main");
+              const panelResolver = mainEl?.shadowRoot?.querySelector("partial-panel-resolver");
+              const panel = panelResolver?.children[0];
+              const currentPanel = panel?.localName || null;
+
+              // Panel changed and is not loading
+              return currentPanel !== expectedPanel &&
+                     (!panel || !("_loading" in panel) || !panel._loading);
+            },
+            {
+              timeout: 10000,
+              polling: 100,
+            },
+            panelBefore
+          );
+          logger.debug(`Panel changed from ${panelBefore}`);
+        } catch (err) {
+          logger.warn("Panel change detection timed out, continuing anyway");
         }
 
-        page.removeScriptToEvaluateOnNewDocument(evaluateIdentifier.identifier);
-
-        // Full page reload needs more time
-        defaultWait = isAddOn ? 3000 : 2000;
+        // Event-based navigation is fast
+        defaultWait = isAddOn ? 1500 : 1000;
       } else {
         // We are already on the correct page
         defaultWait = 0;
